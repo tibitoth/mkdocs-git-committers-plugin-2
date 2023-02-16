@@ -53,11 +53,12 @@ class GitCommittersPlugin(BasePlugin):
             self.githuburl = "https://" + self.config['enterprise_hostname'] + "/"
         else:
             self.githuburl = "https://github.com/"
+        self.github_avatar_url = 'https://avatars.githubusercontent.com/'
         self.localrepo = Repo(".")
         self.branch = self.config['branch']
         return config
 
-    def list_contributors(self, path):
+    def list_contributors(self, path, page):
         last_commit_date = ""
         for c in Commit.iter_items(self.localrepo, self.localrepo.head, path):
             if not last_commit_date:
@@ -73,11 +74,17 @@ class GitCommittersPlugin(BasePlugin):
         if path in self.cache_page_authors:
             if self.cache_date and time.strptime(last_commit_date, "%Y-%m-%d") < time.strptime(self.cache_date, "%Y-%m-%d"):
                 return self.cache_page_authors[path]['authors'], self.cache_page_authors[path]['last_commit_date']
+        
+        manual_authors = []
+        if 'contributors' in page.meta:
+            users = page.meta['contributors'].split(',')
+            for username in users:
+                manual_authors.append({'login': username, 'name': username, 'url': self.githuburl + username, 'avatar': self.github_avatar_url + username})
 
+        blame_authors=[]
         url_contribs = self.githuburl + self.config['repository'] + "/blame/" + self.config['branch'] + "/" + path
         LOG.info("git-committers: fetching contributors for " + path)
         LOG.debug("   from " + url_contribs)
-        authors=[]
         try:
             response = requests.get(url_contribs)
             response.raise_for_status()
@@ -98,12 +105,14 @@ class GitCommittersPlugin(BasePlugin):
                 avatar = img_tags[0]['src']
                 avatar = re.sub(r'\?.*$', '', avatar)
                 if any(x['login'] == login for x in authors) == False:
-                    authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
+                    blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
 
-            authors.sort(key = lambda x: x['login'].lower())
+            blame_authors.sort(key = lambda x: x['login'].lower())
 
-            # Update global cache_page_authors
-            self.cache_page_authors[path] = {'last_commit_date': last_commit_date, 'authors': authors}
+        authors = manual_authors + blame_authors
+
+        # Update global cache_page_authors
+        self.cache_page_authors[path] = {'last_commit_date': last_commit_date, 'authors': authors}
 
         return authors, last_commit_date
 
@@ -113,7 +122,7 @@ class GitCommittersPlugin(BasePlugin):
             return context
         start = timer()
         git_path = self.config['docs_path'] + page.file.src_path
-        authors, last_commit_date = self.list_contributors(git_path)
+        authors, last_commit_date = self.list_contributors(git_path, page)
         if authors:
             context['committers'] = authors
         if last_commit_date:
