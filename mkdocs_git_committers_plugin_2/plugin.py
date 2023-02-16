@@ -76,8 +76,8 @@ class GitCommittersPlugin(BasePlugin):
                 return self.cache_page_authors[path]['authors'], self.cache_page_authors[path]['last_commit_date']
         
         manual_authors = []
-        if 'contributors' in page.meta:
-            users = page.meta['contributors'].split(',')
+        if 'authors' in page.meta:
+            users = page.meta['authors'].split(',')
             for username in users:
                 manual_authors.append({'login': username, 'name': username, 'url': self.githuburl + username, 'avatar': self.github_avatar_url + username})
 
