@@ -104,7 +104,7 @@ class GitCommittersPlugin(BasePlugin):
                 img_tags = a.find_all('img')
                 avatar = img_tags[0]['src']
                 avatar = re.sub(r'\?.*$', '', avatar)
-                if any(x['login'] == login for x in authors) == False:
+                if any(x['login'] == login for x in blame_authors) == False && any(x['login'] == login for x in manual_authors) == False:
                     blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
 
             blame_authors.sort(key = lambda x: x['login'].lower())
