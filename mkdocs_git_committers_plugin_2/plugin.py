@@ -116,6 +116,7 @@ class GitCommittersPlugin(BasePlugin):
                     repo=self.config['repository'].split('/')[1], 
                     branch=self.branch,
                     path=path).replace("\n", "\\n") + "\"}"
+            LOG.info("git-committers: graphql query: " + json)
             response = requests.post(url_graphql, json = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
