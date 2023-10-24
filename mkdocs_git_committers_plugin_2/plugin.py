@@ -117,7 +117,7 @@ class GitCommittersPlugin(BasePlugin):
                     branch=self.branch,
                     path=path).replace("\n", "\\n") + "\"}"
             LOG.info("git-committers: graphql query: " + json)
-            response = requests.post(url_graphql, json = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
+            response = requests.post(url_graphql, data = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
