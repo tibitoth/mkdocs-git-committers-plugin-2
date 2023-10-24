@@ -17,6 +17,7 @@ LOG = logging.getLogger("mkdocs.plugins." + __name__)
 class GitCommittersPlugin(BasePlugin):
 
     config_scheme = (
+        ('github_token', config_options.Type(str, default='')),
         ('enterprise_hostname', config_options.Type(str, default='')),
         ('repository', config_options.Type(str, default='')),
         ('branch', config_options.Type(str, default='master')),
@@ -51,6 +52,7 @@ class GitCommittersPlugin(BasePlugin):
         self.github_avatar_url = 'https://avatars.githubusercontent.com/'
         self.localrepo = Repo(".")
         self.branch = self.config['branch']
+        self.github_token = self.config['github_token']
         return config
 
     def list_contributors(self, path, page):
@@ -117,7 +119,7 @@ class GitCommittersPlugin(BasePlugin):
                     branch=self.branch,
                     path=path)
             },
-            headers={ 'Authorization': 'Bearer ' + os.environ['INPUT_GITHUB_TOKEN'] })
+            headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
