@@ -57,33 +57,33 @@ class GitCommittersPlugin(BasePlugin):
 
     def list_contributors(self, path, page):
         graphquery = """
-{
-  repository(owner: \"{org}\", name: \"{repo}\") {
+{{
+  repository(owner: \"{org}\", name: \"{repo}\") {{
     # branch name
-    ref(qualifiedName:\"{branch}\") {      
-      target {
+    ref(qualifiedName:\"{branch}\") {{      
+      target {{
         # cast Target to a Commit
-        ... on Commit {
+        ... on Commit {{
           # full repo-relative path to blame file
-          blame(path:\"{path}\") {
-            ranges {
-              commit {
-                author {
-                  user {
+          blame(path:\"{path}\") {{
+            ranges {{
+              commit {{
+                author {{
+                  user {{
                     avatarUrl
                     login
                     name
-                  }
-                }
-              }
+                  }}
+                }}
+              }}
               age
-            }
-          }
-        }
-      }
-    }
-  }
-}"""
+            }}
+          }}
+        }}
+      }}
+    }}
+  }}
+}}"""
 
         last_commit_date = ""
         for c in Commit.iter_items(self.localrepo, self.localrepo.head, path):
@@ -111,18 +111,17 @@ class GitCommittersPlugin(BasePlugin):
         url_graphql = "https://api.github.com/graphql"
         LOG.info("git-committers: fetching contributors for " + path)
         try:
-            json = "{ \"query\":" + "\"" + graphquery.format(
+            json = "{ \"query\": \"" + graphquery.format(
                     org=self.config['repository'].split('/')[0],
                     repo=self.config['repository'].split('/')[1], 
                     branch=self.branch,
                     path=path) + "\"}"
-            LOG.info("git-committers: json query: " + json)
             response = requests.post(url_graphql, json = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
-        # except Exception as err:
-        #     LOG.error(f'git-committers: Other error occurred: {err}')
+        except Exception as err:
+            LOG.error(f'git-committers: Other error occurred: {err}')
         else:
             json = response.text
             # Parse the json response
