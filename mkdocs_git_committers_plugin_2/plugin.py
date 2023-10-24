@@ -58,14 +58,14 @@ class GitCommittersPlugin(BasePlugin):
     def list_contributors(self, path, page):
         graphquery = """
 {
-  repository(owner: "{org}", name: "{repo}") {
+  repository(owner: \"{org}\", name: \"{repo}\") {
     # branch name
-    ref(qualifiedName:"{branch}") {      
+    ref(qualifiedName:\"{branch}\") {      
       target {
         # cast Target to a Commit
         ... on Commit {
           # full repo-relative path to blame file
-          blame(path:"{path}") {
+          blame(path:\"{path}\") {
             ranges {
               commit {
                 author {
