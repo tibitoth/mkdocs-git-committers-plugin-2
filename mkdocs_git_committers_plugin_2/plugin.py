@@ -134,7 +134,8 @@ class GitCommittersPlugin(BasePlugin):
                 name = commit['commit']['author']['user']['name']
                 url = self.githuburl + login
                 avatar = commit['commit']['author']['user']['avatarUrl']
-                blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
+                if any(x['login'] == login for x in blame_authors) == False and any(x['login'] == login for x in manual_authors) == False:
+                    blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
 
             blame_authors.sort(key = lambda x: x['login'].lower())
 
