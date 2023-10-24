@@ -56,7 +56,8 @@ class GitCommittersPlugin(BasePlugin):
         return config
 
     def list_contributors(self, path, page):
-        graphquery = """{
+        graphquery = """
+{
   repository(owner: "{org}", name: "{repo}") {
     # branch name
     ref(qualifiedName:"{branch}") {      
@@ -109,17 +110,16 @@ class GitCommittersPlugin(BasePlugin):
         blame_authors=[]
         url_graphql = "https://api.github.com/graphql"
         LOG.info("git-committers: fetching contributors for " + path)
-        LOG.debug("   from " + url_graphql)
         try:
-            response = requests.post(url_graphql, json = 
-            {
+            json = {
                 'query': graphquery.format(
                     org=self.config['repository'].split('/')[0],
                     repo=self.config['repository'].split('/')[1], 
                     branch=self.branch,
                     path=path)
-            },
-            headers={ 'Authorization': 'Bearer ' + self.github_token })
+            }
+            LOG.info("git-committers: json query: " + json)
+            response = requests.post(url_graphql, json = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
