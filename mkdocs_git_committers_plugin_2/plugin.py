@@ -123,8 +123,8 @@ class GitCommittersPlugin(BasePlugin):
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
-        except Exception as err:
-            LOG.error(f'git-committers: Other error occurred: {err}')
+        # except Exception as err:
+        #     LOG.error(f'git-committers: Other error occurred: {err}')
         else:
             json = response.text
             # Parse the json response
