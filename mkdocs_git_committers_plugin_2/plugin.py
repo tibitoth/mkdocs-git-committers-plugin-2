@@ -111,23 +111,23 @@ class GitCommittersPlugin(BasePlugin):
         url_graphql = "https://api.github.com/graphql"
         LOG.info("git-committers: fetching contributors for " + path)
         try:
-            json = "{ \"query\": \"" + graphquery.format(
+            jsonBody = "{ \"query\": \"" + graphquery.format(
                     org=self.config['repository'].split('/')[0],
                     repo=self.config['repository'].split('/')[1], 
                     branch=self.branch,
                     path=path).replace("\n", "\\n") + "\"}"
-            LOG.info("git-committers: graphql query: " + json)
-            response = requests.post(url_graphql, data = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
+            LOG.debug("git-committers: graphql query: " + jsonBody)
+            response = requests.post(url_graphql, data = jsonBody, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
-            LOG.error(f'error body: {response.text}')
+            LOG.debug(f'error body: {response.text}')
         except Exception as err:
             LOG.error(f'git-committers: Other error occurred: {err}')
         else:
-            json = response.text
+            jsonBody = response.text
             # Parse the json response
-            data = json.loads(json)
+            data = json.loads(jsonBody)
             # get author logins and avatars based on the graphquery's response
             for commit in data['data']['repository']['ref']['target']['blame']['ranges']:
                 login = commit['commit']['author']['user']['login']
