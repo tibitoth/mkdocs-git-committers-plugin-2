@@ -1,21 +1,16 @@
 import os
-import sys
 import logging
-from pprint import pprint
 from timeit import default_timer as timer
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from mkdocs import utils as mkdocs_utils
-from mkdocs.config import config_options, Config
+from mkdocs.config import config_options
 from mkdocs.plugins import BasePlugin
 
 from git import Repo, Commit
 import requests, json
 from requests.exceptions import HTTPError
 import time
-import hashlib
-import re
-from bs4 import BeautifulSoup as bs
 
 LOG = logging.getLogger("mkdocs.plugins." + __name__)
 
@@ -59,6 +54,34 @@ class GitCommittersPlugin(BasePlugin):
         return config
 
     def list_contributors(self, path, page):
+        graphquery = """{
+  repository(owner: "{org}", name: "{repo}") {
+    # branch name
+    ref(qualifiedName:"{branch}") {      
+      target {
+        # cast Target to a Commit
+        ... on Commit {
+          # full repo-relative path to blame file
+          blame(path:"{path}") {
+            ranges {
+              commit {
+                author {
+                  user {
+                    avatarUrl
+                    login
+                    name
+                  }
+                }
+              }
+              age
+            }
+          }
+        }
+      }
+    }
+  }
+}"""
+
         last_commit_date = ""
         for c in Commit.iter_items(self.localrepo, self.localrepo.head, path):
             if not last_commit_date:
@@ -82,30 +105,35 @@ class GitCommittersPlugin(BasePlugin):
                 manual_authors.append({'login': username, 'name': username, 'url': self.githuburl + username, 'avatar': self.github_avatar_url + username})
 
         blame_authors=[]
-        url_contribs = self.githuburl + self.config['repository'] + "/blame/" + self.config['branch'] + "/" + path
+        url_graphql = "https://api.github.com/graphql"
         LOG.info("git-committers: fetching contributors for " + path)
-        LOG.debug("   from " + url_contribs)
+        LOG.debug("   from " + url_graphql)
         try:
-            response = requests.get(url_contribs)
+            response = requests.post(url_graphql, json = 
+            {
+                'query': graphquery.format(
+                    org=self.config['repository'].split('/')[0],
+                    repo=self.config['repository'].split('/')[1], 
+                    branch=self.branch,
+                    path=path)
+            },
+            headers={ 'Authorization': 'Bearer ' + os.environ['GITHUB_TOKEN'] })
             response.raise_for_status()
         except HTTPError as http_err:
             LOG.error(f'git-committers: HTTP error occurred: {http_err}\n(404 is normal if file is not on GitHub yet or Git submodule)')
         except Exception as err:
             LOG.error(f'git-committers: Other error occurred: {err}')
         else:
-            html = response.text
-            # Parse the HTML
-            soup = bs(html, "lxml")
-            a_tags = soup.select('.blame-commit a.avatar')
-            for a in a_tags:
-                login = a['href'].replace("/", "")
+            json = response.text
+            # Parse the json response
+            data = json.loads(json)
+            # get author logins and avatars based on the graphquery's response
+            for commit in data['data']['repository']['ref']['target']['blame']['ranges']:
+                login = commit['commit']['author']['user']['login']
+                name = commit['commit']['author']['user']['name']
                 url = self.githuburl + login
-                name = login
-                img_tags = a.find_all('img')
-                avatar = img_tags[0]['src']
-                avatar = re.sub(r'\?.*$', '', avatar)
-                if any(x['login'] == login for x in blame_authors) == False and any(x['login'] == login for x in manual_authors) == False:
-                    blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
+                avatar = commit['commit']['author']['user']['avatarUrl']
+                blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
 
             blame_authors.sort(key = lambda x: x['login'].lower())
 
