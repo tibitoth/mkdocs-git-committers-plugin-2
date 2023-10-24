@@ -111,13 +111,11 @@ class GitCommittersPlugin(BasePlugin):
         url_graphql = "https://api.github.com/graphql"
         LOG.info("git-committers: fetching contributors for " + path)
         try:
-            json = {
-                'query': graphquery.format(
+            json = "{ \"query\":" + "\"" + graphquery.format(
                     org=self.config['repository'].split('/')[0],
                     repo=self.config['repository'].split('/')[1], 
                     branch=self.branch,
-                    path=path)
-            }
+                    path=path) + "\"}"
             LOG.info("git-committers: json query: " + json)
             response = requests.post(url_graphql, json = json, headers={ 'Authorization': 'Bearer ' + self.github_token })
             response.raise_for_status()
