@@ -131,7 +131,7 @@ class GitCommittersPlugin(BasePlugin):
             # get author logins and avatars based on the graphquery's response
             for commit in data['data']['repository']['ref']['target']['blame']['ranges']:
                 user = commit['commit']['author']['user']
-                if user is None
+                if user is None:
                     continue
                 
                 login = user['login']
