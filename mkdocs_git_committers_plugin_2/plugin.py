@@ -130,10 +130,14 @@ class GitCommittersPlugin(BasePlugin):
             data = json.loads(jsonBody)
             # get author logins and avatars based on the graphquery's response
             for commit in data['data']['repository']['ref']['target']['blame']['ranges']:
-                login = commit['commit']['author']['user']['login']
-                name = commit['commit']['author']['user']['name']
+                user = commit['commit']['author']['user']
+                if user is None
+                    continue
+                
+                login = user['login']
+                name = user['name']
                 url = self.githuburl + login
-                avatar = commit['commit']['author']['user']['avatarUrl']
+                avatar = user['avatarUrl']
                 if any(x['login'] == login for x in blame_authors) == False and any(x['login'] == login for x in manual_authors) == False:
                     blame_authors.append({'login':login, 'name': name, 'url': url, 'avatar': avatar})
 
